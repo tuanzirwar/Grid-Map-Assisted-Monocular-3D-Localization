@@ -33,7 +33,8 @@ mosquitto
 python mqtt_publish.py
 python main.py
 ```
-
+### 2.4 运行评估
+python ex3new_stereo.py
 
 The main structure of the codes (such as ex1new_lazer.py) is identical. Different scenarios can be simulated by switching the input files map.json and plane.json. Noise added to the ProjectionMatrix is used to simulate intrinsic parameter perturbations, while variations in screen_x and screen_y are used to model detection errors. In addition, choosing either midpoints or rightpoint in
 "calculate_and_plot_3d_rmse(midpoints, gt)"allows the simulation of LiDAR-based versus stereo-based reconstruction results.
