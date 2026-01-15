@@ -20,8 +20,9 @@
 ```
 ## 2. 配置
 ```bash
-git clone https://github.com/szabolcsdombi/python-mesh-raycast.git
 git clone https://github.com/tuanzirwar/Grid-Map-Assisted-Monocular-3D-Localization.git
+cd Grid-Map-Assisted-Monocular-3D-Localization
+git clone https://github.com/szabolcsdombi/python-mesh-raycast.git
 ```
 ```bash
 pip install -r requirements.txt
