@@ -1,0 +1,112 @@
+# 默认配置文件，部分参数可以修改，但注意是否正确，否则报错
+global:
+  bbox_type: &bbox_type "xywh"
+  map_path: &map_path "/root/workspace/ObjectLocation/data/map/combine.obj" #可更换地图
+  multi_map_path: &multi_map_path "/root/workspace/ObjectLocation/data/map/JiuLongLake_1223.pkl" #可更换地图
+  offset: &offset "/root/workspace/ObjectLocation/data/map/JiuLongLake_1223_offset.txt" #随地图变化,很重要
+  time_slice: &time_slice 1000 # 时间线融合, 可以调整, 单位ms
+  enable_reloaction: &enable_reloaction False # 默认，不可修改
+  order: &order "rzyx" # 固定参数
+  exit_key: "e" # 退出按键,留给用户自定义  内置有esc q Q 三个按键
+
+pipeline:
+  stage1:
+    idx: 1
+    name: "MQTTSource"
+    parallel: 1
+    args:
+      offset: *offset
+      bbox_type: *bbox_type
+      # broker_url: "192.168.31.38" # mqtt  服务器地址
+      broker_url: "127.0.0.1"
+      port: 1883 #mqtt服务端口
+      client_id: "objection_detection" # 客户端ID，保证唯一
+      qos: 2 #服务质量
+      topic_uav_sn: "uav/product/syn_device_sn" # sn订阅话题
+      timeout: 30 # mqtt连接超时限制
+
+  # stage1:
+  #   idx: 1
+  #   name: "MQTTLogSource"
+  #   parallel: 1
+  #   args:
+  #       offset: *offset
+  #       bbox_type: *bbox_type
+  #       file_path: "data/log/20231226_16h13m59s_80.log"
+
+  stage2:
+    idx: 2
+    name: "MOTracker"
+    parallel: 1
+    args:
+      max_age: 20 # 遗忘时间
+      min_hits: 4 # 最小匹配次数
+      distance_threshold: 10 # 距离阈值
+      max_queue_length: null
+
+  stage3:
+    idx: 3
+    parallel: 1
+    name: "TimeFilter"
+    args:
+      time_slice: *time_slice
+      max_queue_length: null
+
+  # stage4:
+  #   idx: 4
+  #   parallel: 4  # 并行数，根据机器性能调整
+  #   name: "EstiPosition"
+  #   args:
+  #     is_multi_map : True
+  #     map_path: *multi_map_path # 多尺度地图时pkl文件，否则是obj文件
+  #     default_height: -3.5  #默认平面
+  #     order: *order
+  #     enable_reloaction: *enable_reloaction
+  #     max_queue_length: null
+  #     multi_num : 2 # 多尺度选项：一共几层地图
+  #     downSampled_scale : [0.2, 0.1] # 每层地图相对于原始地图的下采样倍数
+  #     split_scale : [[10, 10], [5, 5]] # 每层地图分为多少块
+  #     block_num : 1 # 找不到的情况下，向周围几个block遍历
+  #     overlap_x_scale : 0.1 # 切分的x重叠率
+  #     overlap_y_scale : 0.1 # 切分的y重叠率
+
+
+  stage4:
+    idx: 4
+    parallel: 4  # 并行数，根据机器性能调整
+    name: "EstiPosition"
+    args:
+      is_multi_map : False
+      map_path: *map_path  # 多尺度地图时pkl文件，否则是obj文件
+      default_height: -3.5 #默认平面
+      order: *order
+      enable_reloaction: *enable_reloaction
+      max_queue_length: null
+
+
+  stage5:
+    idx: 5
+    name: "SpatialFilter"
+    parallel: 1
+    args:
+      time_slice: *time_slice
+      distance_threshold: 10.0 #多机融合距离阈值，两个目标不可以长时间在这个距离内相
+      max_map: 100
+      max_queue_length: null
+
+  # stage6:
+  #   idx: 6
+  #   parallel: 1
+  #   name: "HttpSink"
+  #   args:
+  #     url: "http://127.0.0.1:8888/jk-ivas/non/controller/postTarPos" # 下游接口地址
+  #     offset: *offset
+  #     max_retries: 5 # 错误重发次数
+
+  stage6:
+    idx: 6
+    name: "PrintSink"
+    parallel: 1
+    args:
+      time_freq: 10
+      offset: *offset
